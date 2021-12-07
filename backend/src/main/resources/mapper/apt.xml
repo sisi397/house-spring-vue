@@ -1,0 +1,82 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+	"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.ssafy.happyhouse.model.mapper.AptMapper">
+
+	<select id="getSido" resultType="sidoGugunCodeDto">
+		select left(sidoCode,2) sidoCode, sidoName
+		from sidocode
+		order by sidoCode
+	</select>
+	
+	<select id="getGugunInSido" parameterType="string" resultType="sidoGugunCodeDto">
+		select left(gugunCode,5) gugunCode, gugunName
+		from guguncode
+		where left(gugunCode,2) = #{sido}
+		order by gugunCode
+	</select>
+	
+	<select id="getDongInGugun" parameterType="string" resultType="houseInfoDto">
+		select distinct dongName, dongCode
+		from houseinfo
+		where left(dongCode, 5) = #{gugun}
+		order by dongName
+	</select>
+	
+	<select id="getAptInDong" parameterType="string" resultType="houseInfoDto">
+		select h.aptCode, h.aptName, h.buildyear, h.dongCode, h.dongName, h.jibun, h.lat, h.lng, si.sidoname, gu.gugunname,
+				(select dealAmount from housedeal where aptCode = h.aptCode and no = (select max(no) from housedeal where aptCode = h.aptCode)) recentPrice,
+				CASE
+					WHEN h.aptCode in (select aptCode from bookmark where userId = #{userId}) THEN 1
+					ELSE 0
+				END AS 'bookmark'
+		from houseinfo h
+		left join sidocode si
+		on left(h.dongcode,2) = left(si.sidocode,2)
+		left join guguncode gu
+		on left(h.dongcode,5) = left(gu.guguncode,5)
+		where dongCode = #{dong} 
+		order by aptName
+	</select>
+	
+	<select id="getAptDetail" parameterType="string" resultType="houseInfoDto">
+		select h.aptCode, h.aptName, h.buildyear, h.dongCode, h.dongName, h.jibun, h.lat, h.lng, si.sidoname, gu.gugunname, hd.dealAmount, hd.dealYear, hd.dealMonth, hd.dealDay, hd.area, hd.floor
+		from houseinfo h
+		left join sidocode si
+		on left(h.dongcode,2) = left(si.sidocode,2)
+		left join guguncode gu
+		on left(h.dongcode,5) = left(gu.guguncode,5)
+		left join housedeal hd
+		on h.aptCode = hd.aptCode
+		where h.aptCode = #{aptCode} 
+		order by dealYear DESC, dealMonth DESC, dealDay DESC
+	</select>
+	
+	<select id="getSidoGugun" parameterType="string" resultType="houseInfoDto">
+		select sidoName, gugunName
+		from baseaddress
+		where dongCode=#{sigungudongCode};
+	</select>
+	
+	<insert id="getBookmarkReg" parameterType="String">
+		insert into bookmark (userId, aptCode)
+		values (#{userId}, #{aptCode})
+	</insert>
+	
+	<select id="getBookmark" parameterType="string" resultType="houseInfoDto">
+		select h.aptCode, h.aptName, h.dongCode, h.dongName, h.jibun, h.lat, h.lng, si.sidoname, gu.gugunname,
+				(select dealAmount from housedeal where aptCode = h.aptCode and no = (select max(no) from housedeal where aptCode = h.aptCode)) recentPrice
+		from houseinfo h
+		left join sidocode si
+		on left(h.dongcode,2) = left(si.sidocode,2)
+		left join guguncode gu
+		on left(h.dongcode,5) = left(gu.guguncode,5)
+		where aptCode in(select aptCode from bookmark where userId = #{userId})
+	</select>
+	
+	<delete id="getBookmarkDelete" parameterType="String">
+		delete from bookmark
+		where userId=#{userId} and aptCode=#{aptCode}
+	</delete>
+</mapper>
